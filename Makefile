@@ -2,10 +2,10 @@
 CC = g++
 
 # C++ Compiler flags
-CXXFLAGS = -c -Wall
+CXXFLAGS = -c -Wall -g
 
 # Include and Library directories
-LIB = -lIrrlicht 
+LIB = -lIrrlicht -lopencv_core -lopencv_videoio -lopencv_imgproc -lopencv_highgui -lopencv_objdetect
 
 # Separate files based on file endings
 CC_SRC = $(wildcard src/*.cc)

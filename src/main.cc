@@ -6,8 +6,17 @@
 
 using namespace irr;
 using namespace std;
+using namespace cv;
 
 int main() {
+    VideoCapture cap(0);
+    if (!cap.isOpened()) 
+        return -1;
+    
+    float scale = 15.f;
+    String face_cascade = "../config/haarcascade_frontalface_default.xml";
+    CascadeClassifier face;
+    if(!face.load(face_cascade)) return -1;
     IrrlichtDevice *device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(800,600));
     
     video::IVideoDriver *driver = device->getVideoDriver();
@@ -30,7 +39,7 @@ int main() {
         dummy->setPosition(core::vector3df(1.7046/2, 0, 3.2837/2));
         node->setParent(dummy);
 
-        //dummy->setPosition(core::vector3df(-1, 1, 0));
+        dummy->setPosition(core::vector3df(-1, 1, 0));
         char buf[33];
         snprintf(buf, 33, "%f,%f,%f", node->getPosition().X, node->getPosition().Y, node->getPosition().Z);
         logger->log(buf);
@@ -54,10 +63,28 @@ int main() {
          *
          * The pseudocode here moves the camera in 0.1, 0.1 direction.
          */
-        core::vector3df curr = cam->getPosition();
-        core::vector3df next = curr + core::vector3df(0, 0, 0);
-        cam->setPosition(next);
-        cam->setTarget(node->getPosition());        
+        Mat frame;
+        cap >> frame;
+        if(frame.empty()) continue;
+
+        vector<Rect> faces;
+        Mat grey;
+        cvtColor(frame, grey, COLOR_BGR2GRAY);
+
+        face.detectMultiScale(grey, faces, 1.1, 3, 0);
+        int r_y = faces[0].y + (int) round(faces[0].width/2.6);
+        int r_x = faces[0].x + (int) faces[0].height/2;
+
+        int h_2 = frame.rows/2;
+        int w_2 = frame.cols/2;
+
+        float x = (h_2 - r_x)/scale;
+        float y = (w_2 - r_y)/scale;
+
+        //core::vector3df curr = cam->getPosition();
+        //core::vector3df next = curr + core::vector3df(x, y, 0);
+        cam->setPosition(core::vector3df(x, y, -5));
+        cam->setTarget(dummy->getPosition());        
 
         driver->endScene();
     }
