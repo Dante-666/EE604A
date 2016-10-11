@@ -18,13 +18,12 @@ int main() {
     CascadeClassifier face;
     if(!face.load(face_cascade)) return -1;
     IrrlichtDevice *device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(800,600));
-    
+
     video::IVideoDriver *driver = device->getVideoDriver();
     scene::ISceneManager *scenemgr = device->getSceneManager();
     gui::IGUIEnvironment *guienv = device->getGUIEnvironment();
     ILogger *logger = device->getLogger();
 
-    device->setWindowCaption(L"Hello World");
     guienv->addStaticText(L"This is a test", core::rect<s32>(10,10, 260, 22));
 
     scene::IAnimatedMesh *mesh = scenemgr->getMesh("../data/models/IPhone/IPhone 4Gs _5.obj");
@@ -47,12 +46,20 @@ int main() {
         mmp->flipSurfaces(mesh);
         light->setPosition(core::vector3df(0, 0, 15));
     }
+    
     /**
      * Because of normals and lighting issue, place the camera at -z, and work out the parabola.
      */
     scene::ICameraSceneNode *cam = scenemgr->addCameraSceneNode(0, core::vector3df(0, 0, -5), core::vector3df(0, 0, 0));
 
+    Mat frame;
+    Mat grey;
+    vector<Rect> faces;
+
+    int lastFPS = -1;
+
     while(device->run() && driver) {
+
         driver->beginScene(true, true, video::SColor(255, 100, 101, 140));
         scenemgr->drawAll();
         guienv->drawAll();
@@ -63,12 +70,12 @@ int main() {
          *
          * The pseudocode here moves the camera in 0.1, 0.1 direction.
          */
-        Mat frame;
         cap >> frame;
-        if(frame.empty()) continue;
+        if(frame.empty()) {
+            driver->endScene();
+            continue;
+        }
 
-        vector<Rect> faces;
-        Mat grey;
         cvtColor(frame, grey, COLOR_BGR2GRAY);
 
         face.detectMultiScale(grey, faces, 1.1, 3, 0);
@@ -78,15 +85,31 @@ int main() {
         int h_2 = frame.rows/2;
         int w_2 = frame.cols/2;
 
-        float x = (h_2 - r_x)/scale;
-        float y = (w_2 - r_y)/scale;
+        float x = (w_2 - r_x)/scale;
+        float y = (h_2 - r_y)/scale;
 
-        //core::vector3df curr = cam->getPosition();
-        //core::vector3df next = curr + core::vector3df(x, y, 0);
+        char buf[33];
+        snprintf(buf, 33, "%f,%f", x, y);
+        logger->log(buf);
+
+        //float z = 5 * sqrt((1 - pow(x,2)/25 - pow(y, 2)/100));
+        
         cam->setPosition(core::vector3df(x, y, -5));
         cam->setTarget(dummy->getPosition());        
 
         driver->endScene();
+
+        int fps = driver->getFPS();
+
+        if (lastFPS != fps) {
+            core::stringw tmp(L"Movement Example - Irrlicht Engine [");
+            tmp += driver->getName();
+            tmp += L"] fps: ";
+            tmp += fps;
+
+            device->setWindowCaption(tmp.c_str());
+            lastFPS = fps;
+        }
     }
 
     driver->drop();
