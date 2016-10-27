@@ -5,7 +5,7 @@ CC = g++
 CXXFLAGS = -c -Wall
 
 # Include and Library directories
-LIB = -lIrrlicht -lopencv_core -lopencv_videoio -lopencv_imgproc -lopencv_highgui -lopencv_objdetect
+LIB = -lIrrlicht -lopencv_core -lopencv_videoio -lopencv_imgproc -lopencv_highgui -lopencv_objdetect -lpthread
 
 # Separate files based on file endings
 CC_SRC = $(wildcard src/*.cc)
