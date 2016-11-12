@@ -30,6 +30,9 @@ point diff_1;
 point diff_0;
 bool quit;
 
+/**
+ * Took this snippet from Irrlicht Documentation on KeyEvent Handling
+ */
 class KeyReceiver : public IEventReceiver 
 {
     public:
@@ -53,7 +56,10 @@ class KeyReceiver : public IEventReceiver
         bool KeyIsDown[KEY_KEY_CODES_COUNT];
 };
 
-
+/**
+ * Basic structure of the face detector was taken from OpenCV docs and we included
+ * our parts in the necessary areas.
+ */
 void fetchData() { 
     VideoCapture cap(0);
     if (!cap.isOpened()) return;
@@ -176,6 +182,10 @@ point3 transform(point in) {
     return rval;
 }
 
+/**
+ * The basic game loop was taken from Irrlicht docs and we included the required
+ * stuff by ourselves
+ */
 int main() {
 
     String face_cascade = "../config/haarcascade_frontalface_default.xml";
