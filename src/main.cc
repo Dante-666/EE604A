@@ -28,32 +28,28 @@ mutex q_mutex;
 point diff_2;
 point diff_1;
 point diff_0;
+bool quit;
 
-class KeyReceiver : public IEventReceiver
+class KeyReceiver : public IEventReceiver 
 {
     public:
-    //This is the one method that we have to implement
         virtual bool OnEvent(const SEvent& event) {
-            // Remember whether each key is down or up
-            if (event.EventType == EET_KEY_INPUT_EVENT) 
+            if (event.EventType == EET_KEY_INPUT_EVENT)
                 KeyIsDown[event.KeyInput.Key] = event.KeyInput.PressedDown;
+            
             return false;
         }
 
-        // This is used to check whether a key is being held down
-        virtual bool IsKeyDown(EKEY_CODE keyCode) const
-        {
+        virtual bool IsKeyDown(EKEY_CODE keyCode) const {
             return KeyIsDown[keyCode];
         }
-    
-        KeyReceiver()
-        {
-            for (u32 i=0; i<KEY_KEY_CODES_COUNT; ++i)
+
+        KeyReceiver() {
+            for (unsigned int i=0; i < KEY_KEY_CODES_COUNT; ++i)
                 KeyIsDown[i] = false;
         }
 
     private:
-        // We use this array to store the current state of each key
         bool KeyIsDown[KEY_KEY_CODES_COUNT];
 };
 
@@ -61,8 +57,12 @@ class KeyReceiver : public IEventReceiver
 void fetchData() { 
     VideoCapture cap(0);
     if (!cap.isOpened()) return;
-    
-    float scale = .0951447f;
+   
+    /**
+     * These values were determined by experimentation.
+     */
+//    float scale = .0951447f;
+    float scale = .1451447f;
     float thresh = .2366f;
 
     String face_cascade = "../config/haarcascade_frontalface_default.xml";
@@ -75,11 +75,11 @@ void fetchData() {
 
     float x, y, x_ = -1, y_ = -1;
 
-    while(true) {
+    while(!quit) {
 
         cap >> frame;
         if(frame.empty()) {
-            //Interpolate some values here.
+            //Or interpolate some values here.
             continue;
         }
 
@@ -165,8 +165,8 @@ void fetchData() {
 }
 
 point3 transform(point in) {
-    float a = 40.0f;
-    float b = 30.0f;
+    float a = 50.0f;
+    float b = 40.0f;
 
     float t = in.x*in.x/(a*a) + in.y*in.y/(b*b) + 1; 
     t = sqrt(1/t);
@@ -176,26 +176,15 @@ point3 transform(point in) {
     return rval;
 }
 
-/*
-point transform(point in) {
-    float a = 30;
-    float b = 40;
-
-    float t = in.x*in.x/(a*a) + 1;
-    t = sqrt(1/t);
-
-    point rval = {in.x * t, in.y * t};
-
-    return rval;
-}*/
-
 int main() {
 
     String face_cascade = "../config/haarcascade_frontalface_default.xml";
     CascadeClassifier face;
     if(!face.load(face_cascade)) return -1;
-    //KeyReceiver receiver;
-    IrrlichtDevice *device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(800,600), 32, false);
+
+    KeyReceiver rx;
+
+    IrrlichtDevice *device = createDevice(video::EDT_OPENGL, core::dimension2d<u32>(1920, 1080), 32, true, false, false, &rx);
 
     video::IVideoDriver *driver = device->getVideoDriver();
     scene::ISceneManager *scenemgr = device->getSceneManager();
@@ -204,62 +193,65 @@ int main() {
 
     guienv->addStaticText(L"This is a test", core::rect<s32>(10,10, 260, 22));
 
-    scene::ISceneNode* skybox=scenemgr->addSkyBoxSceneNode(
+    scene::ISceneNode *skybox = scenemgr->addSkyBoxSceneNode(
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_up.jpg"),
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_dn.jpg"),
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_lf.jpg"),
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_rt.jpg"),
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_ft.jpg"),
             driver->getTexture("../data/skybox/irrlicht/irrlicht2_bk.jpg"));
+    skybox->setVisible(true);
+    
+    /*skybox[1] = scenemgr->addSkyBoxSceneNode(
+            driver->getTexture("../data/skybox/hw_morning/morning_up.tga"),
+            driver->getTexture("../data/skybox/hw_morning/morning_dn.tga"),
+            driver->getTexture("../data/skybox/hw_morning/morning_lf.tga"),
+            driver->getTexture("../data/skybox/hw_morning/morning_rt.tga"),
+            driver->getTexture("../data/skybox/hw_morning/morning_ft.tga"),
+            driver->getTexture("../data/skybox/hw_morning/morning_bk.tga"));
+    skybox[1]->setVisible(false);
 
-    //scene::IAnimatedMesh *mesh = scenemgr->getMesh("../data/models/IPhone/IPhone 4Gs _5.obj");
-    scene::IAnimatedMesh *mesh = scenemgr->getMesh("../data/models/Box/Box.obj");
+    skybox[2] = scenemgr->addSkyBoxSceneNode(
+            driver->getTexture("../data/skybox/ame_siege/siege_up.tga"),
+            driver->getTexture("../data/skybox/ame_siege/siege_dn.tga"),
+            driver->getTexture("../data/skybox/ame_siege/siege_lf.tga"),
+            driver->getTexture("../data/skybox/ame_siege/siege_rt.tga"),
+            driver->getTexture("../data/skybox/ame_siege/siege_ft.tga"),
+            driver->getTexture("../data/skybox/ame_siege/siege_bk.tga"));
+    skybox[2]->setVisible(false);*/
+    
+    scene::IAnimatedMesh *mesh = scenemgr->getMesh("../data/models/NewCube/NewCube.obj");
     scene::ISceneNode *node = scenemgr->addAnimatedMeshSceneNode(mesh);
-    //scene::ISceneNode *dummy = scenemgr->addEmptySceneNode();
     scene::ILightSceneNode *light = scenemgr->addLightSceneNode();
 
-    //KeyReceiver receiver;
 
     if(node) {
-        node->setPosition(core::vector3df(0, 0, 0));
+        node->setPosition(core::vector3df(0, 0, 50));
         node->setRotation(core::vector3df(0, 0, 0));
-        node->setScale(core::vector3df(0.1, 0.1, 0.1));
+        node->setScale(core::vector3df(13, 13, 13));
 
-        //dummy->setPosition(core::vector3df(1.7046/2, 0, 3.2837/2));
-        //node->setParent(dummy);
-
-        //dummy->setPosition(core::vector3df(-1, 1, 0));
-        //char buf[33];
-        //snprintf(buf, 33, "%f,%f,%f", node->getPosition().X, node->getPosition().Y, node->getPosition().Z);
-        //logger->log(buf);
-        //scene::IMeshManipulator *mmp = driver->getMeshManipulator();
-        //mmp->flipSurfaces(mesh);
-        light->setPosition(core::vector3df(0, 0, -50));
+        light->setPosition(core::vector3df(0, 0, -40));
     }
     
     /**
      * Because of normals and lighting issue, place the camera at -z, and work out the parabola.
      */
-    //scene::ICameraSceneNode *cam = scenemgr->addCameraSceneNodeFPS(0, 10.f, 0.2f);//, core::vector3df(0, 0, -15));//, core::vector3df(0, 0, 0));
-    //cam->setPosition(core::vector3df(0, 0, -100));
     scene::ICameraSceneNode *cam = scenemgr->addCameraSceneNode(0, core::vector3df(0, 0, -40), core::vector3df(0, 0, 0));
 
-    /*Mat frame;
-    Mat grey;
-    vector<Rect> faces;*/
 
     int lastFPS = -1;
-//    bool quit = false;
+    /*int currSkyBox = 0;
+    unsigned int then = device->getTimer()->getTime();
+    unsigned int thres = 2000;
+    unsigned int counter = 0;*/
 
     thread collector(fetchData);
-    /*float x_0 = -23.094f;
-    float delta = 0.2f;
-    float x_n = -x_0;
-    float y_0 = -14.58f;
-    float delta = 0.1f;
-    float y_n = -y_0;*/
 
-    while(device->run() && driver) {
+    while(device->run() && driver && !quit) {
+        // Work out a frame delta time.
+        /*const unsigned int now = device->getTimer()->getTime();
+        const float frameDeltaTime = (float) (now - then) / 1000.f; // Time in seconds
+        then = now;*/
 
         driver->beginScene(true, true, video::SColor(255, 100, 101, 140));
         scenemgr->drawAll();
@@ -267,9 +259,6 @@ int main() {
         /**
          * Get the coordinates of the face.
          * Optional : write code such that the first face in the image is chosen
-         * 1) Base this on the area of the rectangle formed.
-         *
-         * The pseudocode here moves the camera in 0.1, 0.1 direction.
          */
         point my_point;
 	
@@ -293,50 +282,25 @@ int main() {
             cam->setTarget(node->getPosition());
         }
         q_mutex.unlock();
-/*
-        if (y_0 > y_n) break;
 
-        y_0 += delta;
-        point curr = {y_0, -40};
-        point new_p = transform(curr);
+        if(rx.IsKeyDown(KEY_KEY_X)) quit = true;
+        /*if(rx.IsKeyDown(KEY_KEY_O)) {
 
-        cam->setPosition(core::vector3df(0, new_p.x, new_p.y));
+            for(int i = 0; i < 3; i++) {
+                skybox[i]->setVisible(false);
+            }
 
-        char buf[33];
-        snprintf(buf, 33, "%f,%f,%f", cam->getPosition().X, cam->getPosition().Y, cam->getPosition().Z);
-        logger->log(buf);
-        cam->setTarget(node->getPosition());
+            if (++currSkyBox > 2) currSkyBox == 0;
+            skybox[currSkyBox]->setVisible(true);
+        
+        }*/
 
-        //if(receiver.IsKeyDown(KEY_ESCAPE)) quit = true;
-
-        core::vector3df nodePosition = cam->getPosition();
-
-        if(receiver.IsKeyDown(KEY_KEY_W))
-            nodePosition.Y += 0.1;
-        else if(receiver.IsKeyDown(KEY_KEY_S))
-            nodePosition.Y -= 0.1;
-
-        if(receiver.IsKeyDown(KEY_KEY_A))
-            nodePosition.X += 0.1;
-        else if(receiver.IsKeyDown(KEY_KEY_D))
-            nodePosition.X += 0.1;
-
-        if(receiver.IsKeyDown(KEY_KEY_P))
-            nodePosition.Z += 0.1;
-        else if(receiver.IsKeyDown(KEY_KEY_L))
-            nodePosition.Z += 0.1;
-
-        cam->setPosition(nodePosition);
-
-        if(receiver.IsKeyDown(KEY_KEY_U))
-            cam->setTarget(dummy->getPosition());
-*/
         driver->endScene();
 
         int fps = driver->getFPS();
 
         if (lastFPS != fps) {
-            core::stringw tmp(L"Movement Example - Irrlicht Engine [");
+            core::stringw tmp(L"Virtual Reality - Irrlicht Engine [");
             tmp += driver->getName();
             tmp += L"] fps: ";
             tmp += fps;
@@ -345,6 +309,8 @@ int main() {
             lastFPS = fps;
         }
     }
+
+    collector.join();
 
     driver->drop();
 

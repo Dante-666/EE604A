@@ -1,0 +1,13 @@
+# Blender MTL File: 'NewCube.blend'
+# Material Count: 1
+
+newmtl Crate
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.201726 0.186180 0.157643
+Ks 1.000000 1.000000 1.000000
+Ke 1.300014 1.199828 1.015919
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd Crate_Map.png
